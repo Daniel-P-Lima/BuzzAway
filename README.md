@@ -6,6 +6,6 @@
 - Usando a placa ESP32 com sensores e atuadores.
 - Conexão via tópicos MQTT.
 
-# Ideia futuras:
+# ☕ Ideia futuras:
 - Integrar com banco de dados SQL para armazenar os dados.
 - Melhorar UI design.
