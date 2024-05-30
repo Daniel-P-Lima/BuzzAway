@@ -1,9 +1,12 @@
 #app_controller.py
 from flask import Flask, render_template, request
+from models.db import db, instance
 from controllers.login import login_
 from controllers.sensor_controller import sensors
+from models.iot.read import Read
 from controllers.actuator_controller import actuator
 import json
+from controllers.reads_controller import read, Read
 from flask_mqtt import Mqtt
 
 temperature = 10
@@ -21,6 +24,11 @@ def create_app():
                 static_folder="./static/",
                 root_path="./")
 
+
+    app.config['TESTING'] = False
+    app.config['SECRET_KEY'] = 'generated-secrete-key'
+    app.config['SQLALCHEMY_DATABASE_URI'] = instance
+    db.init_app(app)
 
 
     app.config['MQTT_BROKER_URL'] = 'mqtt-dashboard.com'
@@ -64,9 +72,19 @@ def create_app():
         if(message.topic==topic_subscribe1):
             js = json.loads(message.payload.decode())
             temperature = js
+            try:
+                with app.app_context():
+                    Read.save_read(topic_subscribe1, temperature)
+            except:
+                pass
         elif(message.topic==topic_subscribe2):
             js = json.loads(message.payload.decode())
             humidity = js
+            try:
+                with app.app_context():
+                    Read.save_read(topic_subscribe2, humidity)
+            except:
+                pass
         elif(message.topic==topic_subscribe3):
             js = json.loads(message.payload.decode())
             ultrassom = js
@@ -84,6 +102,7 @@ def create_app():
     app.register_blueprint(login_, url_prefix='/')
     app.register_blueprint(sensors, url_prefix='/')
     app.register_blueprint(actuator, url_prefix='/')
+    app.register_blueprint(read, url_prefix='/')
 
     
 

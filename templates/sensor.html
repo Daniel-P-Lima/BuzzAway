@@ -3,21 +3,33 @@
 <div class="vertical-center">
   <div class="container view">
     <div class="justify-content-center">
-      {% if devices|length > 0 %}
+      {% if sensors|length > 0 %}
       <table id="view_sensors" class="table table-striped table-bordered styled-table">
         <caption>Sensores:</caption>
         <thead>
           <tr>
-            <th>Sensores</th>
-            <th>Numero</th>
-            <th>Deletar</th>
+            <th>Sensor</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Tópico</th>
+            <th>Unidade</th>
+            <th>Ativo?</th>
           </tr>
         </thead>
         <tbody>
-          {% for key, value in devices.items() %}
+          {% for sensor in sensors%}
           <tr>
-            <td>{{ key }}</td>
-            <td>{{ value }}</td>
+            <td>{{ sensor.name }}</td>
+            <td>{{ sensor.brand }}</td>
+            <td>{{ sensor.model }}</td>
+            <td>{{ sensor.topic }}</td>
+            <td>{{ sensor.unit }}</td>
+            {% if sensor.is_active == true %}
+                <td>Ativo</td>
+            {% else %}
+                <td>Desativado</td>
+            {% endif %}
+            <td><a href="http://localhost:8080/edit_sensor?id={{sensor.id}}">Editar</a></td>
             <td><a class="delButton"  href="http://localhost:8080/del_sensor?sensor={{ key }}">Deletar</a></td>
           </tr>
           {% endfor %}
