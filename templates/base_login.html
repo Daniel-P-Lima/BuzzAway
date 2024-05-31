@@ -17,10 +17,10 @@
 			</ul>
 		</nav>
 	</header>
-	<form id="loginForm"  action = "http://localhost:8080/validated_user" method = "post">
+	<form id="loginForm"  action = "/login" method = "POST">
 		<h2>Login</h2>
-		<p class="whiteText">Usuário:</p>
-	   <p><input type="text" id="user" name="user" placeholder="Usuário" required></p>
+		<p class="whiteText">E-mail:</p>
+	   <p><input type="text" id="email" name="email" placeholder="E-mail" required></p>
 		<p class="whiteText">Senha:</p>
 	   <p><input type="password" id="password" name="password" placeholder="*******" required></p>
 	   <div id="errorMessage" class="error-message"></div>
