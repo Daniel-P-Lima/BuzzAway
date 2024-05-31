@@ -1,5 +1,5 @@
 #app_controller.py
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, flash, Blueprint
 from models.db import db, instance
 from controllers.login import login_
 from controllers.sensor_controller import sensors
@@ -8,6 +8,9 @@ from controllers.actuator_controller import actuator
 import json
 from controllers.reads_controller import read, Read
 from flask_mqtt import Mqtt
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from models.user import User
 
 temperature = 10
 humidity = 10
@@ -28,7 +31,12 @@ def create_app():
     app.config['TESTING'] = False
     app.config['SECRET_KEY'] = 'generated-secrete-key'
     app.config['SQLALCHEMY_DATABASE_URI'] = instance
+    
     db.init_app(app)
+
+    login_manager = LoginManager()
+    login_manager.login_view = 'login'
+    login_manager.init_app(app)
 
 
     app.config['MQTT_BROKER_URL'] = 'mqtt-dashboard.com'
@@ -99,16 +107,95 @@ def create_app():
             global led_string
             led_string = message.payload.decode()
 
+    @app.route('/signup')
+    def signup():
+        return render_template('signup.html')
+
+    @app.route('/signup', methods=['POST'])
+    def signup_post():
+        email = request.form.get('email')
+        name = request.form.get('name')
+        password = request.form.get('password')
+        
+        print("Received signup request with email:", email)
+
+        user = User.query.filter_by(email=email).first()
+        
+        print("Queried for user:", user)
+
+        if user:
+            flash('Email já existente')
+            return redirect(url_for('login'))
+
+        new_user = User(email=email, name=name, password=generate_password_hash(password, method='scrypt'))
+
+        print("usuario criado:", new_user)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Signup successful! Please log in.')
+        return redirect(url_for('login'))
+    
+    
+    @app.route('/login')
+    def login():
+        return render_template('login.html')
+
+    @app.route('/login', methods=['POST'])
+    def login_post():
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember = True if request.form.get('remember') else False
+
+        print("Email recebido:", email)
+        print("Senha recebida:", password)
+
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            flash('Email address not found.')
+            return redirect(url_for('login'))
+
+        print("Usuário encontrado:", user)
+
+        if not check_password_hash(user.password, password):
+            flash('Incorrect password. Please try again.')
+            return redirect(url_for('login'))
+
+        print("Login bem sucedido para o usuário:", user.email)
+
+        login_user(user, remember=remember)
+        return redirect(url_for('base'))
+    
+    @app.route('/logout')
+    @login_required
+    def logout():
+        logout_user()
+        flash('You have been logged out successfully.', 'success')
+        return redirect(url_for('login'))
+
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        # since the user_id is just the primary key of our user table, use it in the query for the user
+        return User.query.get(int(user_id))
+
     app.register_blueprint(login_, url_prefix='/')
     app.register_blueprint(sensors, url_prefix='/')
     app.register_blueprint(actuator, url_prefix='/')
     app.register_blueprint(read, url_prefix='/')
 
+    @login_manager.user_loader
+    def load_user(user_id):
+        # since the user_id is just the primary key of our user table, use it in the query for the user
+        return User.query.get(int(user_id))
+
     
 
     @app.route('/')
     def index():
-        return render_template("login.html")
+        return render_template("base.html")
     
     @app.route('/base')
     def base():
